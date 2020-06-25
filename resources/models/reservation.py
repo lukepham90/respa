@@ -582,3 +582,39 @@ class ReservationMetadataSet(ModifiableModel):
 
     def __str__(self):
         return self.name
+
+
+class ReservationCancelReasonCategory(ModifiableModel):
+    CONFIRMED = 'confirmed'
+    REQUESTED = 'requested'
+    OWN = 'own'
+
+    RESERVATION_TYPE_CHOICES = (
+        (CONFIRMED, _('Confirmed reservation')),
+        (REQUESTED, _('Requested reservation')),
+        (OWN, _('Own reservation')),
+    )
+
+    reservation_type = models.CharField(max_length=32, choices=RESERVATION_TYPE_CHOICES, verbose_name=_('Reservation type'), default=CONFIRMED)
+    name = models.CharField(max_length=100, verbose_name=_('Name'), unique=True)
+    description = models.TextField(blank=True, verbose_name=_('Description'))
+
+    class Meta:
+        verbose_name = _('Reservation cancellation reason category')
+        verbose_name_plural = _('Reservation cancellation reason categories')
+
+    def __str__(self):
+        return self.name
+
+
+class ReservationCancelReason(ModifiableModel):
+    reservation = models.OneToOneField(Reservation, on_delete=models.CASCADE, related_name='cancel_reason')
+    category = models.ForeignKey(ReservationCancelReasonCategory, on_delete=models.PROTECT)
+    description = models.TextField(blank=True, verbose_name=_('Description'))
+
+    class Meta:
+        verbose_name = _('Reservation cancellation reason')
+        verbose_name_plural = _('Reservation cancellation reasons')
+
+    def __str__(self):
+        return '{} ({})'.format(self.category.name, self.reservation.pk)

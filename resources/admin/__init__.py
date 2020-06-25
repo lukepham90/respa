@@ -26,7 +26,8 @@ from ..models import (
     AccessibilityValue, AccessibilityViewpoint, Day, Equipment, EquipmentAlias, EquipmentCategory, Purpose,
     Reservation, ReservationMetadataField, ReservationMetadataSet, Resource, ResourceAccessibility,
     ResourceEquipment, ResourceGroup, ResourceImage, ResourceType, TermsOfUse,
-    Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization)
+    Unit, UnitAuthorization, UnitIdentifier, UnitGroup, UnitGroupAuthorization,
+    ReservationCancelReason, ReservationCancelReasonCategory)
 from munigeo.models import Municipality
 from rest_framework.authtoken.admin import Token
 
@@ -232,6 +233,14 @@ class ReservationAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, Extr
     raw_id_fields = ('user', 'resource')
 
 
+class ReservationCancelReasonCategoryAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin):
+    pass
+
+
+class ReservationCancelReasonAdmin(PopulateCreatedAndModifiedMixin, admin.ModelAdmin):
+    raw_id_fields = ('reservation',)
+
+
 class ResourceTypeAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin):
     pass
 
@@ -399,3 +408,6 @@ admin.site.register(ResourceAccessibility, ResourceAccessibilityAdmin)
 if admin.site.is_registered(Token):
     admin.site.unregister(Token)
 admin_site.register(Token, RespaTokenAdmin)
+
+admin_site.register(ReservationCancelReason, ReservationCancelReasonAdmin)
+admin_site.register(ReservationCancelReasonCategory, ReservationCancelReasonCategoryAdmin)

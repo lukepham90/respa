@@ -24,7 +24,8 @@ from rest_framework.settings import api_settings as drf_settings
 
 from munigeo import api as munigeo_api
 
-from resources.models import Reservation, Resource, ReservationMetadataSet
+from resources.models import (
+    Reservation, Resource, ReservationMetadataSet, ReservationCancelReasonCategory, ReservationCancelReason)
 from resources.models.reservation import RESERVATION_EXTRA_FIELDS
 from resources.pagination import ReservationPagination
 from resources.models.utils import generate_reservation_xlsx, get_object_or_none
@@ -71,6 +72,22 @@ class UserSerializer(TranslatedModelSerializer):
         fields = ('id', 'display_name', 'email')
 
 
+class ReservationCancelReasonCategorySerializer(TranslatedModelSerializer):
+    class Meta:
+        model = ReservationCancelReasonCategory
+        fields = [
+            'id', 'reservation_type', 'name', 'description'
+        ]
+
+
+class ReservationCancelReasonSerializer(TranslatedModelSerializer):
+    class Meta:
+        model = ReservationCancelReason
+        fields = [
+            'id', 'category_id', 'description'
+        ]
+
+
 class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
     begin = NullableDateTimeField()
     end = NullableDateTimeField()
@@ -79,12 +96,13 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
     state = serializers.ChoiceField(choices=Reservation.STATE_CHOICES, required=False)
     need_manual_confirmation = serializers.ReadOnlyField()
     user_permissions = serializers.SerializerMethodField()
+    cancel_reason = ReservationCancelReasonSerializer()
 
     class Meta:
         model = Reservation
         fields = [
             'url', 'id', 'resource', 'user', 'begin', 'end', 'comments', 'is_own', 'state', 'need_manual_confirmation',
-            'staff_event', 'access_code', 'user_permissions', 'type'
+            'staff_event', 'access_code', 'user_permissions', 'type', 'cancel_reason'
         ] + list(RESERVATION_EXTRA_FIELDS)
         read_only_fields = list(RESERVATION_EXTRA_FIELDS)
 
@@ -167,7 +185,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         if not resource.can_make_reservations(request_user):
             raise PermissionDenied(_('You are not allowed to make reservations in this resource.'))
 
-        if data['end'] < timezone.now():
+        if data.get('end', False) and data['end'] < timezone.now():
             raise ValidationError(_('You cannot make a reservation in the past'))
 
         if not resource.can_ignore_opening_hours(request_user):
