@@ -80,11 +80,11 @@ class ReservationCancelReasonCategorySerializer(TranslatedModelSerializer):
         ]
 
 
-class ReservationCancelReasonSerializer(TranslatedModelSerializer):
+class ReservationCancelReasonSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReservationCancelReason
         fields = [
-            'id', 'category_id', 'description'
+            'id', 'category', 'description', 'reservation'
         ]
 
 
@@ -166,7 +166,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             return value
 
         if instance.resource.can_approve_reservations(request_user):
-            allowed_states = (Reservation.REQUESTED, Reservation.CONFIRMED, Reservation.DENIED)
+            allowed_states = (Reservation.REQUESTED, Reservation.CONFIRMED, Reservation.DENIED, Reservation.CANCELLED)
             if instance.state in allowed_states and value in allowed_states:
                 return value
 
@@ -242,7 +242,16 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             resource.validate_max_reservations_per_user(request_user)
 
         # Run model clean
-        instance = Reservation(**data)
+        if reservation:
+            instance = reservation
+            for key in data:
+                try:
+                    setattr(instance, key, data[key])
+                except ValueError:
+                    pass
+        else:
+            instance = Reservation(**data)
+
         try:
             instance.clean(original_reservation=reservation, user=request_user)
         except DjangoValidationError as exc:
@@ -319,6 +328,16 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             data['has_catering_order'] = instance.catering_orders.exists()
 
         return data
+
+    def update(self, instance, validated_data):
+        cancel_reason = validated_data.pop('cancel_reason', None)
+        reservation = super().update(instance, validated_data)
+
+        if cancel_reason:
+            cancel_reason['reservation'] = reservation
+            reservation.cancel_reason = ReservationCancelReason(**cancel_reason)
+
+        return reservation
 
     def get_is_own(self, obj):
         return obj.user == self.context['request'].user

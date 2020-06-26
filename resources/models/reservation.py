@@ -608,8 +608,8 @@ class ReservationCancelReasonCategory(ModifiableModel):
 
 
 class ReservationCancelReason(ModifiableModel):
-    reservation = models.OneToOneField(Reservation, on_delete=models.CASCADE, related_name='cancel_reason')
-    category = models.ForeignKey(ReservationCancelReasonCategory, on_delete=models.PROTECT)
+    reservation = models.OneToOneField(Reservation, on_delete=models.CASCADE, related_name='cancel_reason', null=False)
+    category = models.ForeignKey(ReservationCancelReasonCategory, on_delete=models.PROTECT, null=False)
     description = models.TextField(blank=True, verbose_name=_('Description'))
 
     class Meta:
