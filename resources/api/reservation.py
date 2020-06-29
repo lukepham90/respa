@@ -114,7 +114,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         model = Reservation
         fields = [
             'url', 'id', 'resource', 'user', 'begin', 'end', 'comments', 'is_own', 'state', 'need_manual_confirmation',
-            'staff_event', 'access_code', 'user_permissions', 'type', 'cancel_reason'
+            'staff_event', 'access_code', 'user_permissions', 'type'
         ] + list(RESERVATION_EXTRA_FIELDS)
         read_only_fields = list(RESERVATION_EXTRA_FIELDS)
 
@@ -347,7 +347,6 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         cancel_reason = validated_data.pop('cancel_reason', None)
         new_state = validated_data.pop('state', instance.state)
 
-        print(request.user)
         validated_data['modified_by'] = request.user
         reservation = super().update(instance, validated_data)
 
@@ -719,4 +718,11 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
         return response
 
 
+class ReservationCancelReasonCategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = ReservationCancelReasonCategory.objects.all()
+    filter_backends = (DjangoFilterBackend,)
+    serializer_class = ReservationCancelReasonCategorySerializer
+
+
 register_view(ReservationViewSet, 'reservation')
+register_view(ReservationCancelReasonCategoryViewSet, 'cancel_reason_category')

@@ -35,7 +35,7 @@ RESERVATION_EXTRA_FIELDS = ('reserver_name', 'reserver_phone_number', 'reserver_
                             'billing_email_address', 'billing_address_street', 'billing_address_zip',
                             'billing_address_city', 'company', 'event_description', 'event_subject', 'reserver_id',
                             'number_of_participants', 'participants', 'reserver_email_address', 'host_name',
-                            'reservation_extra_questions')
+                            'reservation_extra_questions', 'cancel_reason')
 
 
 class ReservationQuerySet(models.QuerySet):
@@ -263,6 +263,7 @@ class Reservation(ModifiableModel):
                     # notifications are not sent from staff created reservations to avoid spam
                     self.send_reservation_created_mail()
         elif new_state == Reservation.DENIED:
+            print('TESTIII AAAA')
             self.send_reservation_denied_mail()
         elif new_state == Reservation.CANCELLED:
             order = self.get_order()
@@ -276,7 +277,7 @@ class Reservation(ModifiableModel):
                                        user=user)
 
         self.state = new_state
-        print(self.approver)
+
         self.save()
 
     def can_modify(self, user):
