@@ -276,6 +276,7 @@ class Reservation(ModifiableModel):
                                        user=user)
 
         self.state = new_state
+        print(self.approver)
         self.save()
 
     def can_modify(self, user):
@@ -447,6 +448,11 @@ class Reservation(ModifiableModel):
             elif notification_type == NotificationType.RESERVATION_REQUESTED:
                 if self.resource.reservation_requested_notification_extra:
                     context['extra_content'] = self.resource.reservation_requested_notification_extra
+            elif notification_type in [NotificationType.RESERVATION_CANCELLED, NotificationType.RESERVATION_DENIED]:
+                if hasattr(self, 'cancel_message'):
+                    context['extra_content'] = '{}\n\n{}'.format(
+                        self.cancel_message.description,
+                        self.cancel_message.category.description)
 
             # Get last main and ground plan images. Normally there shouldn't be more than one of each
             # of those images.

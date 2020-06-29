@@ -81,11 +81,23 @@ class ReservationCancelReasonCategorySerializer(TranslatedModelSerializer):
 
 
 class ReservationCancelReasonSerializer(serializers.ModelSerializer):
+    category_name = serializers.SerializerMethodField()
+    category_description = serializers.SerializerMethodField()
+
     class Meta:
         model = ReservationCancelReason
         fields = [
-            'id', 'category', 'description', 'reservation'
+            'category', 'description', 'reservation', 'category_name', 'category_description'
         ]
+        extra_kwargs = {
+            'reservation': {'write_only': True}
+        }
+
+    def get_category_name(self, obj):
+        return obj.category.name
+
+    def get_category_description(self, obj):
+        return obj.category.description
 
 
 class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_api.GeoModelSerializer):
@@ -96,7 +108,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
     state = serializers.ChoiceField(choices=Reservation.STATE_CHOICES, required=False)
     need_manual_confirmation = serializers.ReadOnlyField()
     user_permissions = serializers.SerializerMethodField()
-    cancel_reason = ReservationCancelReasonSerializer()
+    cancel_reason = ReservationCancelReasonSerializer(required=False)
 
     class Meta:
         model = Reservation
@@ -330,12 +342,24 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
         return data
 
     def update(self, instance, validated_data):
+        request = self.context['request']
+
         cancel_reason = validated_data.pop('cancel_reason', None)
+        new_state = validated_data.pop('state', instance.state)
+
+        print(request.user)
+        validated_data['modified_by'] = request.user
         reservation = super().update(instance, validated_data)
 
-        if cancel_reason:
+        reservation.set_state(new_state, request.user)
+
+        if new_state in [Reservation.DENIED, Reservation.CANCELLED] and cancel_reason:
+            if hasattr(instance, 'cancel_reason'):
+                instance.cancel_reason.delete()
+
             cancel_reason['reservation'] = reservation
             reservation.cancel_reason = ReservationCancelReason(**cancel_reason)
+            reservation.cancel_reason.save()
 
         return reservation
 
@@ -678,12 +702,6 @@ class ReservationViewSet(munigeo_api.GeoModelAPIView, viewsets.ModelViewSet, Res
                 new_state = Reservation.CONFIRMED
 
         instance.set_state(new_state, self.request.user)
-
-    def perform_update(self, serializer):
-        old_instance = self.get_object()
-        new_state = serializer.validated_data.pop('state', old_instance.state)
-        new_instance = serializer.save(modified_by=self.request.user)
-        new_instance.set_state(new_state, self.request.user)
 
     def perform_destroy(self, instance):
         instance.set_state(Reservation.CANCELLED, self.request.user)
