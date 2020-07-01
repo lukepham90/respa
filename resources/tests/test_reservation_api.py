@@ -1,9 +1,11 @@
+import os
 import pytest
 import datetime
 import re
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from django.utils import dateparse, timezone, translation
 from guardian.shortcuts import assign_perm, remove_perm
@@ -15,7 +17,7 @@ from rest_framework.exceptions import ErrorDetail
 from caterings.models import CateringOrder, CateringProvider
 
 from resources.enums import UnitAuthorizationLevel
-from resources.models import (Period, Day, Reservation, Resource, ResourceGroup, ReservationMetadataField,
+from resources.models import (Attachment, Period, Day, Reservation, Resource, ResourceGroup, ReservationMetadataField,
                               ReservationMetadataSet, UnitAuthorization)
 from notifications.models import NotificationTemplate, NotificationType
 from notifications.tests.utils import check_received_mail_exists
@@ -1099,6 +1101,13 @@ def test_reservation_mails(
     resource = Resource.objects.get(id=reservation_data_extra['resource'])
     resource.need_manual_confirmation = True
     resource.reservation_metadata_set = ReservationMetadataSet.objects.get(name='default')
+    # create attachments for resource
+    pdf_attachment = SimpleUploadedFile('testi.pdf', b'file_content', content_type='application/pdf')
+    attachment_object = Attachment.objects.create(
+        name='Testi PDF',
+        pdf_file=pdf_attachment
+    )
+    resource.attachments.add(attachment_object)
     resource.save()
     if perm_type == 'unit':
         assign_perm('unit:can_approve_reservation',
@@ -1167,6 +1176,8 @@ def test_reservation_mails(
         'has been confirmed.',
         clear_outbox=False
     )
+    pdf_name = os.path.basename(attachment_object.pdf_file.name)
+    assert pdf_name in mail.outbox[0].attachments[1]
     assert 'this resource rocks' in str(mail.outbox[0].message())
     mail.outbox = []
 

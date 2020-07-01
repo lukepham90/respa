@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import logging
 import datetime
 import pytz
@@ -523,9 +524,14 @@ class Reservation(ModifiableModel):
     def send_reservation_confirmed_mail(self):
         reservations = [self]
         ical_file = build_reservations_ical_file(reservations)
-        attachment = ('reservation.ics', ical_file, 'text/calendar')
+        ics_attachment = ('reservation.ics', ical_file, 'text/calendar')
+        attachments = [ics_attachment]
+        if self.resource.attachments.exists():
+            for attachment in self.resource.attachments.all():
+                pdf_name = os.path.basename(attachment.pdf_file.name)
+                attachments.append((pdf_name, attachment.pdf_file.read(), 'application/pdf'))
         self.send_reservation_mail(NotificationType.RESERVATION_CONFIRMED,
-                                   attachments=[attachment])
+                                   attachments=attachments)
 
     def send_reservation_cancelled_mail(self):
         self.send_reservation_mail(NotificationType.RESERVATION_CANCELLED)
