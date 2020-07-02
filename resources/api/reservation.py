@@ -722,6 +722,8 @@ class ReservationCancelReasonCategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ReservationCancelReasonCategory.objects.all()
     filter_backends = (DjangoFilterBackend,)
     serializer_class = ReservationCancelReasonCategorySerializer
+    filterset_fields = ['reservation_type']
+    pagination_class = None
 
 
 register_view(ReservationViewSet, 'reservation')

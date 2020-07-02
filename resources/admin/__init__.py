@@ -239,6 +239,7 @@ class ReservationCancelReasonCategoryAdmin(PopulateCreatedAndModifiedMixin, Comm
 
 class ReservationCancelReasonAdmin(PopulateCreatedAndModifiedMixin, admin.ModelAdmin):
     raw_id_fields = ('reservation',)
+    readonly_fields = ('created_by', 'modified_by')
 
 
 class ResourceTypeAdmin(PopulateCreatedAndModifiedMixin, CommonExcludeMixin, TranslationAdmin):
