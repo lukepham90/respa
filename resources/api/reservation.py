@@ -178,7 +178,7 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             return value
 
         if instance.resource.can_approve_reservations(request_user):
-            allowed_states = (Reservation.REQUESTED, Reservation.CONFIRMED, Reservation.DENIED, Reservation.CANCELLED)
+            allowed_states = (Reservation.REQUESTED, Reservation.CONFIRMED, Reservation.DENIED)
             if instance.state in allowed_states and value in allowed_states:
                 return value
 
