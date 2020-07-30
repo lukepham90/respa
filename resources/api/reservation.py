@@ -182,6 +182,9 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             if instance.state in allowed_states and value in allowed_states:
                 return value
 
+        if instance.can_modify(request_user) and value == Reservation.CANCELLED:
+            return value
+
         raise ValidationError(_('Illegal state change'))
 
     def validate(self, data):

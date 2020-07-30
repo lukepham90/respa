@@ -263,7 +263,6 @@ class Reservation(ModifiableModel):
                     # notifications are not sent from staff created reservations to avoid spam
                     self.send_reservation_created_mail()
         elif new_state == Reservation.DENIED:
-            print('TESTIII AAAA')
             self.send_reservation_denied_mail()
         elif new_state == Reservation.CANCELLED:
             order = self.get_order()
@@ -451,9 +450,11 @@ class Reservation(ModifiableModel):
                     context['extra_content'] = self.resource.reservation_requested_notification_extra
             elif notification_type in [NotificationType.RESERVATION_CANCELLED, NotificationType.RESERVATION_DENIED]:
                 if hasattr(self, 'cancel_message'):
-                    context['extra_content'] = '{}\n\n{}'.format(
+                    context['extra_content'] = '{}\n\n{}\n\n{}\n\n{}'.format(
                         self.cancel_message.description,
-                        self.cancel_message.category.description)
+                        self.cancel_message.category.description_fi,
+                        self.cancel_message.category.description_en,
+                        self.cancel_message.category.description_sv)
 
             # Get last main and ground plan images. Normally there shouldn't be more than one of each
             # of those images.
