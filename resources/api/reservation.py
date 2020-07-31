@@ -257,28 +257,21 @@ class ReservationSerializer(ExtraDataMixin, TranslatedModelSerializer, munigeo_a
             resource.validate_max_reservations_per_user(request_user)
 
         # Run model clean
-        if reservation:
-            instance = reservation
-            for key in data:
-                try:
-                    setattr(instance, key, data[key])
-                except ValueError:
-                    pass
-        else:
+        if self.context['request'].method != 'PATCH':
             instance = Reservation(**data)
 
-        try:
-            instance.clean(original_reservation=reservation, user=request_user)
-        except DjangoValidationError as exc:
+            try:
+                instance.clean(original_reservation=reservation, user=request_user)
+            except DjangoValidationError as exc:
 
-            # Convert Django ValidationError to DRF ValidationError so that in the response
-            # field specific error messages are added in the field instead of in non_field_messages.
-            if not hasattr(exc, 'error_dict'):
-                raise ValidationError(exc)
-            error_dict = {}
-            for key, value in exc.error_dict.items():
-                error_dict[key] = [error.message for error in value]
-            raise ValidationError(error_dict)
+                # Convert Django ValidationError to DRF ValidationError so that in the response
+                # field specific error messages are added in the field instead of in non_field_messages.
+                if not hasattr(exc, 'error_dict'):
+                    raise ValidationError(exc)
+                error_dict = {}
+                for key, value in exc.error_dict.items():
+                    error_dict[key] = [error.message for error in value]
+                raise ValidationError(error_dict)
         return data
 
     def to_internal_value(self, data):
